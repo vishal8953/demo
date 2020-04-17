@@ -1,0 +1,58 @@
+---
+- name: Test playbook
+  hosts: all
+  become: yes
+  become_method: sudo
+  become_user: root
+
+  tasks:
+
+  - name: installing the httpd packages on {{ ansible_hostname }}
+    yum:
+      name: httpd
+      state: present
+
+  - name: Start service httpd, if not started
+    service:
+      name: httpd
+      state: started
+      enabled: yes
+
+  - name: copy data
+    copy:
+      content: Apache page from host {{ ansible_hostname }} and kernel ver {{ ansible_kernel }} and Memory sise is {{ ansible_memory_mb.real.total }}
+      dest: /var/www/html/index.html
+
+  - name: raw command run
+    shell: hostname; whoami
+    register: shelloutput
+
+  - name: checking the output
+    debug:
+      var: shelloutput.stdout_lines
+
+
+  - name: Start service Docker, if not started
+    service:
+      name: docker
+      state: started
+      enabled: yes
+
+  - name: Create a directory if it does not exist
+    file:
+      path: /clone/
+      state: directory
+      mode: '0755'
+  - name: clone the data from git hub
+    git:
+      repo: https://github.com/bschethan99/lab.git
+      dest: /clone/
+      version: master
+      force: yes
+
+  - name: Build Docker file
+    shell: docker build -t img:v1 /clone/
+
+  - name: DockerRun
+    shell: docker run -itd --rm --name=web1 -p 443:80 img:v1
+...
