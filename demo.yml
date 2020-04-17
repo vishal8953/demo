@@ -1,0 +1,32 @@
+---
+- name: Test playbook
+  hosts: all
+  become: yes
+  become_method: sudo
+  become_user: root
+
+  tasks:
+
+  - name: installing the httpd packages on {{ ansible_hostname }}
+    yum:
+      name: httpd
+      state: present
+
+  - name: Start service httpd, if not started
+    service:
+      name: httpd
+      state: started
+      enabled: yes
+
+  - name: copy data
+    copy:
+      content: Apache page from host {{ ansible_hostname }} and IP is {{ ansible_eth0.ipv4.address }} and kernel ver {{ ansible_kernel }} and Memory sise is {{ ansible_memory_mb.real.total }}
+      dest: /var/www/html/index.html
+
+  - name: raw command run
+    shell: hostname; whoami
+    register: shelloutput
+
+  - name: checking the output
+    debug:
+      var: shelloutput.stdout_lines
